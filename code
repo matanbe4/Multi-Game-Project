@@ -1,0 +1,606 @@
+import pygame
+import time
+import random
+
+#GLOBAL VARIABLES:
+screenSize = (800, 600) 
+white = (255,255,255)
+red = (255,0,0)
+green = (0,255,0)
+buttonH = 80 #The button's height.
+buttonW = 175 #The button's width.
+userName1 = None
+userName2 = None
+SnL = 0
+connect4 = 1
+gotNicks = False
+
+#Display initial:
+gameDisplay = pygame.display.set_mode(screenSize) #Open new window in screenSize's resolution.
+pygame.init()
+clock = pygame.time.Clock() #For delaying the images display.
+victoryFireworks = pygame.image.load('Images/victory.jpg')
+backGround = pygame.image.load('Images/BackGround.jpg')
+recordsBackground = pygame.image.load('Images/records background.png')
+pygame.display.set_caption("Multi Game")
+font = pygame.font.SysFont('comicsansms',40,1)#Default font
+victoryFont = pygame.font.SysFont('comicsansms',60,1)
+
+
+def displayMessage(msg,color, loc, font): #Function that displays the sent message on the screen.
+    message = font.render(msg,True,color)
+    gameDisplay.blit(message,loc)
+    pygame.display.update()
+
+
+def displayRecords(gameType = False):
+    gameDisplay.blit(recordsBackground,(0,0))
+    PrintRecordes(gameType)
+    pygame.display.update()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    if gameType:
+                        connect4()
+                    else:
+                        snakesAndLadders()
+            elif event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+def showIns(insImage):
+    gameDisplay.blit(insImage,(0,0)) #Display the instructions image.
+    pygame.display.update()
+    while True:
+        for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        mainMenu()
+                    elif event.key == pygame.K_RETURN:
+                        return
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+
+def playAgain(gameType):
+    gameDisplay.blit(backGround,(0,0))
+    displayMessage("Play again? (Y/N)", red,(200, 250), font)
+    pygame.display.update()
+    while True:
+        for event in pygame.event.get():
+            if  event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_y:
+                    if gameType == SnL:
+                        snakesAndLadders()
+                    elif gameType == connect4:
+                        connect4()
+                elif event.key == pygame.K_n:
+                    mainMenu()
+                elif event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    quit()  
+            elif event.type == pygame.QUIT:
+                pygame.quit()
+                quit() 
+
+def victory(pName,gameType): #When one of the players wins, that function calls.
+    clock.tick(0.5)
+    gameDisplay.blit(victoryFireworks,(0,0))
+    displayMessage(str(pName) + " Wins!", green, (160, 200), victoryFont)
+    pygame.display.update()
+    clock.tick(0.3)
+    playAgain(gameType)
+
+def nickNamesGet():
+    global userName1, userName2
+    introduction = pygame.image.load('Images/introduction.png')
+    gameDisplay.blit(introduction,(0,0))
+    pygame.display.update()
+    print("Please enter The name of Player1:")
+    userName1 = input()
+    print("Please enter The name of Player2:")
+    userName2 = input()
+    print("Go back to the game.")
+
+
+def connect4():
+    #LOCAL VARIABLES:
+    xMove = 90#x jumps.
+    yMove = 80#y jumps.
+    xS = 13#x Start.
+    yS = 44#y Start.
+    E = 0#Empty.
+    F1 = 1#Full by p1.
+    F2 = 2#Full by p2.
+    
+    win = False #When a player win, win will be changed to True.
+    vsCom = False #From User Choice.
+    comTurn = False #If the user want to play VS the computer, comTurn will be changed to True.
+    WIDTH = 7 #Number of coins in a row.
+    HEIGHT = 6 #Number of coins in a col.
+    coins = 0 #Coins counter
+    connect4FileName = 'connect 4 Recordes.txt'
+
+    #Loading images.
+    board = pygame.image.load('Images/board.png')#Game table.
+    connect4Menu = pygame.image.load('Images/Connect 4 Menu.png')
+    connect4Ins = pygame.image.load('Images/connect 4 instructions.jpeg')
+    p1 =[F1, pygame.image.load('Images/red.png')] #Player1 image.
+    p2 =[F2, pygame.image.load('Images/yellow.png')] #Player2 image.
+    turn = p1 #By default player1 start first.
+    
+    startPos = [xS + xMove * 3, yS]
+    FoE = [#Game matrix.
+        [[xS,yS+yMove,E],[xS+xMove,yS+yMove,E],[xS+xMove*2,yS+yMove,E],[xS+xMove*3,yS+yMove,E],[xS+xMove*4,yS+yMove,E],[xS+xMove*5,yS+yMove,E],[xS+xMove*6,yS+yMove,E]],
+        [[xS,yS+yMove*2,E],[xS+xMove,yS+yMove*2,E],[xS+xMove*2,yS+yMove*2,E],[xS+xMove*3,yS+yMove*2,E],[xS+xMove*4,yS+yMove*2,E],[xS+xMove*5,yS+yMove*2,E],[xS+xMove*6,yS+yMove*2,E]],
+        [[xS,yS+yMove*3,E],[xS+xMove,yS+yMove*3,E],[xS+xMove*2,yS+yMove*3,E],[xS+xMove*3,yS+yMove*3,E],[xS+xMove*4,yS+yMove*3,E],[xS+xMove*5,yS+yMove*3,E],[xS+xMove*6,yS+yMove*3,E]],
+        [[xS,yS+yMove*4,E],[xS+xMove,yS+yMove*4,E],[xS+xMove*2,yS+yMove*4,E],[xS+xMove*3,yS+yMove*4,E],[xS+xMove*4,yS+yMove*4,E],[xS+xMove*5,yS+yMove*4,E],[xS+xMove*6,yS+yMove*4,E]],
+        [[xS,yS+yMove*5,E],[xS+xMove,yS+yMove*5,E],[xS+xMove*2,yS+yMove*5,E],[xS+xMove*3,yS+yMove*5,E],[xS+xMove*4,yS+yMove*5,E],[xS+xMove*5,yS+yMove*5,E],[xS+xMove*6,yS+yMove*5,E]],
+        [[xS,yS+yMove*6,E],[xS+xMove,yS+yMove*6,E],[xS+xMove*2,yS+yMove*6,E],[xS+xMove*3,yS+yMove*6,E],[xS+xMove*4,yS+yMove*6,E],[xS+xMove*5,yS+yMove*6,E],[xS+xMove*6,yS+yMove*6,E]]
+        ]
+
+    def displayMenu(): #Function that display the connect 4 main menu.
+        nonlocal vsCom #Boolean variable.
+        showIns(connect4Ins)
+        gameDisplay.blit(connect4Menu,(0,0)) #Display the menue image.
+        pygame.display.update()
+        while True:
+            cur = pygame.mouse.get_pos() #Getting the mouse position.
+            curClick = pygame.mouse.get_pressed() #Getting the pressed mouse button.
+            if 300 <= cur[0] <= 300 + buttonW and 50 <= cur[1] <= 50 + buttonH: #If the mouse is in the borders of the wanted box
+                if curClick[0] == 1: #Check if it was clicked.
+                    vsCom = False #Turn off VS COM mode.
+                    return
+                
+            elif 300 <= cur[0] <= 300 + buttonW and 200 <= cur[1] <= 200 + buttonH: #If the mouse is in the borders of the wanted box
+                if curClick[0] == 1: #Check if it was clicked.
+                    vsCom = True #Turn on VS COM mode.
+                    return
+               
+            elif 300 <= cur[0] <= 300 + buttonW and 470 <= cur[1] <= 470 + buttonH: #If the mouse is in the borders of the wanted box
+                if curClick[0] == 1: #Check if it was clicked.
+                    mainMenu() #back to the main menu.
+                    
+            elif 45 <= cur[0] <= 45 + buttonW and 470 <= cur[1] <= 470 + buttonH: #If the mouse is in the borders of the wanted box
+                if curClick[0] == 1: #Check if it was clicked.
+                    displayRecords(connect4FileName)
+                    
+            for event in pygame.event.get(): #Closing the game.
+                if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                    mainMenu()
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+    
+    def display():
+        gameDisplay.blit(backGround,(0,0))
+        for i in FoE:
+            for j in i:
+                if j[2] == 1:
+                    gameDisplay.blit(p1[1],(j[0],j[1]))
+                if j[2] == 2:
+                    gameDisplay.blit(p2[1],(j[0],j[1]))
+        gameDisplay.blit(board,(0,120))
+        pygame.display.update()
+    
+    def getLowest(x):
+        for i in range(len(FoE[0])):
+            for j in range(len(FoE) - 1 ,-1 ,-1):
+                if FoE[j][i][0] == x and FoE[j][i][2] == E:
+                    return [FoE[j][i],j,i]
+        return False
+    
+    def dropAnimation(loc,p):
+        temp = p[0]
+        x,y = loc[0], startPos[1]
+        while y != loc[1]:
+            y += yMove
+            gameDisplay.blit(p[1],(x,y))
+            pygame.display.update()
+            clock.tick(10)
+            display()
+        loc[2] = temp
+    
+    def isWinner(y, x, color):#Each pair of for loops counts the possibly sequence, from both sides.
+        counter = 1
+        for i in range(1,4):#DOWN
+            if y + i >= HEIGHT or FoE[y + i][x][2] != color:
+                break
+            counter += 1
+        if counter >= 4:
+            return True
+        counter = 1
+        for i in range(1,4):#RIGHT
+            if x + i >= WIDTH or FoE[y][x + i][2] != color:
+                break
+            counter += 1
+        for i in range(1,4):#LEFT
+            if x - i <= 0 or FoE[y][x - i][2] != color:
+                break
+            counter += 1
+        if counter >= 4:
+            return True
+        counter = 1
+        for i in range(1,4):#\DOWN
+            if x + i >= WIDTH or y + i >= HEIGHT or FoE[y + i][x + i][2] != color:
+                break
+            counter += 1
+        for i in range(1,4):#\UP
+            if x - i < 0 or y - i < 0 or FoE[y - i][x - i][2] != color:
+                break
+            counter += 1
+        if counter >= 4:
+            return True
+        counter = 1
+        for i in range(1,4):#/DOWN
+            if x - i < 0 or y + i >= HEIGHT or FoE[y + i][x - i][2] != color:
+                break
+            counter += 1
+        for i in range(1,4):#/UP
+            if x + i >= WIDTH or y - i < 0 or FoE[y - i][x + i][2] != color:
+                break
+            counter += 1
+        if counter >= 4:
+            return True
+        return False
+    
+    def computerMove(color):
+        dropLoc = []
+        nonlocal win
+        for i in range(WIDTH):#Win Search situation.
+            for j in range(HEIGHT):
+                if isWinner(j, i, color):
+                    dropLoc = getLowest(i * xMove + xS)
+                    if dropLoc != False:
+                        if dropLoc[1] == j and dropLoc[2] == i:
+                            win = True
+                            return dropLoc
+        if color == 1:
+            otherColor = 2
+        else:
+            otherColor = 1         
+        for i in range(WIDTH):#Block Search situation.
+            for j in range(HEIGHT):
+                if isWinner(j, i, otherColor):
+                    dropLoc = getLowest(i * xMove + xS)
+                    if dropLoc != False:
+                        if dropLoc[1] == j and dropLoc[2] == i:
+                            return dropLoc
+        while True:#Randomly inserts to the table.
+            i = random.randint(0,WIDTH - 1)
+            dropLoc = getLowest(i * xMove + xS)
+            if dropLoc != False:
+                return dropLoc  
+    
+    displayMenu()
+    display()       
+    
+    #GAME LOOP
+    while True:    
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                mainMenu()
+            gameDisplay.blit(turn[1],startPos)
+            if event.type == pygame.KEYDOWN and comTurn == False:
+                if event.key == pygame.K_LEFT:
+                    if startPos[0] - xMove >= xS:
+                        startPos[0] -= xMove
+                elif event.key == pygame.K_RIGHT:
+                    if startPos[0] + xMove <= xS + xMove * 6:
+                        startPos[0] += xMove
+                elif event.key == pygame.K_SPACE:
+                        dropLoc = getLowest(startPos[0])
+                        if dropLoc != False:
+                            dropAnimation(dropLoc[0], turn)
+                            display()
+                            win = isWinner(dropLoc[1],dropLoc[2],dropLoc[0][2])
+                            if win == False:
+                                if turn == p1:
+                                    turn = p2
+                                else:
+                                    turn = p1
+                                if vsCom == True:
+                                    comTurn = True
+                            else:
+                                if turn == p1:
+                                    UpdateRecords(userName1,connect4FileName)
+                                    victory("Victory! " + userName1, connect4)
+                                else:
+                                    UpdateRecords(userName2,connect4FileName)
+                                    victory("Victory! " + userName2, connect4)
+                            coins += 1
+                gameDisplay.blit(turn[1],startPos)
+                display()
+            if comTurn == True:
+                if win == False:
+                    dropLoc = computerMove(2)
+                    dropAnimation(dropLoc[0], turn)
+                    display()
+                    if win == False:
+                        turn = p1
+                        comTurn = False
+                    else:
+                        victory("Computer", connect4)
+                coins += 1
+            if coins == 42:
+                gameDisplay.blit(backGround,(0,0))
+                displayMessage("Game Over", red, (250, 250), font)
+                pygame.display.update()
+                clock.tick(0.5)
+                playAgain(connect4)
+            pygame.display.update()
+
+def snakesAndLadders():
+    #Loading images.
+    moveFont = pygame.font.SysFont('comicsansms',30,1)
+    board = pygame.image.load('Images/board.jpg')
+    p1 = pygame.image.load('Images/p1.jpeg')#players images
+    p2 = pygame.image.load('Images/p2.jpeg')
+    c1 = pygame.image.load('Images/c1.jpg')#dice images
+    c2 = pygame.image.load('Images/c2.jpg')
+    c3 = pygame.image.load('Images/c3.jpg')
+    c4 = pygame.image.load('Images/c4.jpg')
+    c5 = pygame.image.load('Images/c5.jpg')
+    c6 = pygame.image.load('Images/c6.jpg')
+    SnLIns = pygame.image.load('Images/SnL instructions.jpeg')
+    SnLMenu = pygame.image.load('Images/SnL Menu.png')
+    SnLFileName = 'S And L Recordes.txt'
+    
+    
+    square = 60 #Size of game board tiles - square * square.
+    res = 0
+    right = 1 #Directions.
+    left = -1
+    p2Turn = False
+    p1Location = [0 ,square * 9] #The initial location of p1.
+    p2Location = [square * 0.5,square * 9.5] #The initial location of p2.
+    diceLocation = [650,120]
+    
+    SLlist = [ #List of Snakes/Ladders.
+        [[240,300],[180,540]], #4th snake.
+        [[360,540],[480,360]], #7th ladder.
+        [[480,180],[420,420]], #28th snake.
+        [[0,420],[0,360]], #21st ladder.
+        [[180,180],[120,360]], #38th snake.
+        [[240,120],[180,300]], #44th snake.
+        [[420,180],[360,60]], #88th ladder.
+        [[60,180],[0,0]], #62nd ladder.
+        [[120,120],[120,0]], #78th ladder.
+        [[180,0],[180,60]], #84th snake.
+        [[480,120],[420,0]], #72nd ladder.
+        [[360,240],[300,360]] #35th snake.
+        ]
+    
+    def displayMenu(): #Function that display the connect 4 main menu.
+        showIns(SnLIns)
+        gameDisplay.blit(SnLMenu,(0,0)) #Display the menue image.
+        pygame.display.update()
+        while True:
+            cur = pygame.mouse.get_pos() #Getting the mouse position.
+            curClick = pygame.mouse.get_pressed() #Getting the pressed mouse button.
+            if 300 <= cur[0] <= 300 + buttonW and 50 <= cur[1] <= 50 + buttonH: #If the mouse is in the borders of the wanted box
+                if curClick[0] == 1: #Check if it was pressed
+                    return
+               
+            elif 300 <= cur[0] <= 300 + buttonW and 470 <= cur[1] <= 470 + buttonH: #If the mouse is in the borders of the wanted box
+                if curClick[0] == 1: #Check if it was pressed
+                    mainMenu() #If it was, it means the user wanted to go back to the main menu.
+                    
+            elif 45 <= cur[0] <= 45 + buttonW and 470 <= cur[1] <= 470 + buttonH: #If the mouse is in the borders of the wanted box
+                if curClick[0] == 1: #Check if it was pressed
+                    displayRecords(SnLFileName)
+                    
+            for event in pygame.event.get(): #Closing the game
+                if (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                    mainMenu()
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+
+    #Function that displays message on the screen.
+    def displayMessage(msg, color, loc, font):
+        message = font.render(msg,True,color)
+        gameDisplay.blit(message,loc)
+        pygame.display.update()
+        
+    #Function that displays the dice's roll and finally the steps.
+    def diceDisplay():
+        val = random.randint(1,6)#The amount of steps.
+        x = []#List of the roll.
+        for _ in range(8):
+            x.append(random.randint(1,6)) #Random values for the roll images.
+        for a in x: #Roll display loop.
+            if a == 1:
+                gameDisplay.blit(c1,diceLocation)
+            elif a == 2:
+                gameDisplay.blit(c2,diceLocation)
+            elif a == 3:
+                gameDisplay.blit(c3,diceLocation)
+            elif a == 4:
+                gameDisplay.blit(c4,diceLocation)
+            elif a == 5:
+                gameDisplay.blit(c5,diceLocation)
+            elif a == 6:
+                gameDisplay.blit(c6,diceLocation)
+            pygame.display.update()
+            clock.tick(8)
+        displayMessage("Movement:",green,[620,80], moveFont)
+        if val == 1:#The actual steps.
+            gameDisplay.blit(c1,diceLocation)
+        elif val == 2:
+            gameDisplay.blit(c2,diceLocation)
+        elif val == 3:
+            gameDisplay.blit(c3,diceLocation)
+        elif val == 4:
+            gameDisplay.blit(c4,diceLocation)
+        elif val == 5:
+            gameDisplay.blit(c5,diceLocation)
+        elif val == 6:
+            gameDisplay.blit(c6,diceLocation)
+        pygame.display.update()
+        clock.tick(0.8)
+        gameDisplay.fill(white)   
+        return val
+    
+    #Display of the regular objects which is the board, p1 and p2.
+    def display():
+        gameDisplay.blit(backGround,(0,0))
+        gameDisplay.blit(board,(0,0))
+        gameDisplay.blit(p1,p1Location)
+        gameDisplay.blit(p2,p2Location)
+        pygame.display.update()  
+        
+    def movementDirection(playerLoc): 
+        return left if (playerLoc[1] % (square * 2) < square) else right #Returns the direction of the movement at every row.
+    
+    def snakeOrLadder(playerLoc):
+        secondPlayer = False 
+        if playerLoc[0] % square != 0: #If the player is the second.
+            playerLoc[0]-= square//2
+            playerLoc[1]-= square//2
+            secondPlayer = True
+        for loc in SLlist:
+            if loc[0] == playerLoc:
+                display()
+                clock.tick(10)
+                x,y = loc[1]
+                playerLoc[0] = x
+                playerLoc[1] = y 
+        if secondPlayer == True: #Returns the second player to its location.
+            playerLoc[0] += square//2
+            playerLoc[1] += square//2
+    
+    def movement(res, playerLoc,pName):
+        direction = movementDirection(playerLoc)
+        for _ in range(res):
+            if playerLoc[0] + square * direction < 600 and playerLoc[0] + square * direction >= 0:
+                playerLoc[0] += square * direction
+            elif playerLoc[0] + square * direction >= 600 or playerLoc[0] + square * direction < 0:
+                direction *= -1
+                playerLoc[1] -= square
+            if _ == res - 1:
+                snakeOrLadder(playerLoc)
+            if playerLoc[0] < square and playerLoc[0] >= 0 and playerLoc[1] < square and playerLoc[1] >= 0:
+                if _ == res - 1:
+                    UpdateRecords(pName, SnLFileName)
+                    display()
+                    victory("Victory! " + pName, SnL)
+                else:
+                    direction = right
+            display()
+            clock.tick(10)
+        direction = movementDirection(playerLoc)
+        return direction
+
+    displayMenu()
+    #GAME LOOP
+    while True:
+        display()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                mainMenu()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
+                    res = diceDisplay()
+                    if p2Turn == False:
+                        p1Direct = movement(res, p1Location, userName1)
+                        p2Turn = True
+                    else:
+                        p2Direct = movement(res, p2Location, userName2)
+                        p2Turn = False
+                break
+            display()                
+        pygame.display.update()
+
+def mainMenu():
+    global gotNicks
+    if gotNicks == False:
+        nickNamesGet()
+        gotNicks = True
+    menu = pygame.image.load('Images/Main Menu.png')
+    gameDisplay.blit(menu,(0,0))
+    pygame.display.update()
+    
+    while True: #Cursor loop.
+        cur = pygame.mouse.get_pos()
+        curClick = pygame.mouse.get_pressed()
+        if 130 <= cur[0] <= 130 + buttonW and 155 <= cur[1] <= 155 + buttonH:
+            if curClick[0] == 1:
+                connect4()
+            
+        elif 492 <= cur[0] <= 492 + buttonW and 157 <= cur[1] <= 157 + buttonH:
+            if curClick[0] == 1:
+                snakesAndLadders()
+        elif 315 <= cur[0] <= 315 + buttonW and 383 <= cur[1] <= 383 + buttonH:
+            if curClick[0] == 1:
+                pygame.quit()
+                quit()
+         
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                pygame.quit()
+                quit()
+             
+def UpdateRecords(name, fileName):
+    name1 = name.split()
+    name = ''
+    for ch in name1:
+        name += ch
+    result = []
+    nameExist = False
+    rec = open(fileName,'a')
+    rec.close
+    rec = open(fileName,'r+')
+    for i in rec.readlines():
+        tmp = i.split()
+        if tmp[0] == name:
+            result.append([tmp[0],int(tmp[1])+1])
+            nameExist = True
+        else:
+             result.append([tmp[0],int(tmp[1])])
+    rec.close
+    if not nameExist:
+        result.append([name,1])
+    else:
+        for i in range(len(result)):
+            for j in range(i):
+                if result[i][1] >= result[j][1]:
+                    temp = result[i]
+                    result[i] = result[j]
+                    result[j] = temp        
+    rec = open(fileName, 'w')
+    for i in result:
+        rec.write(i[0])
+        rec.write(' ')
+        rec.write(str(i[1]))
+        rec.write('\n')
+    rec.close
+
+def ReturnRecordes(fileName):
+    result = []
+    rec = open(fileName,'a')
+    rec.close
+    rec = open(fileName,'r')
+    for i in rec.readlines():
+        tmp = i.split()
+        result.append((tmp[0],tmp[1]))
+    return result
+
+def PrintRecordes(fileName):
+    rec = ReturnRecordes(fileName)
+    y = 155
+    displayMessage("NAME", red,(75, y), font)
+    displayMessage("SCORE", red,(500, y), font)
+    for i in rec:
+        y += 50
+        displayMessage(i[0], red,(75, y), font)
+        displayMessage(i[1], red,(550, y), font)
+                       
+mainMenu()
